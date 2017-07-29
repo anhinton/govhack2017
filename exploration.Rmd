@@ -84,3 +84,61 @@ kable(crashMetadata)
 
 ```
 
+Keen spotters will notice that the metadata and the column names have
+inconsistent capitalisation of variables, so I'll just make all the
+names of my data rows lower case to prevent confusion (maybe).
+
+```{r lowercaseVariables}
+
+names(crashData) = tolower(names(crashData))
+
+```
+
+Useful things I can use:
+
+  + `crash_year` between 2000 and 2017
+  
+  + `fatal_count`, `seriousinj_count`, `minorinj_count` for counts of
+    fatalities, serious injuries, and minor injuries in each crash
+	
+  + `crash_locn1` and `crash_locn2` should give the street names of
+    interest.
+	
+  + initially `easting` and `northing` looked promising, but these 
+    numbers do not seem to correspond to the conversion available at
+    <http://www.linz.govt.nz/data/geodetic-system/datums-projections-heights/projections/new-zealand-map-grid-nzmg>.
+
+## The location
+
+The intersection in question is Karangahape and Newton Roads, Newton,
+Auckland. The street names I will search for are:
+
+```{r streetNames}
+
+streetNames = toupper(c(
+    "Abbey St",         # for some reason street = "ST"
+    "Great North Road", # while road = "ROAD"
+    "Gundry St",    # go figure
+    "Karangahape Road",
+    "Newton Road",
+    "Ponsonby Road"))
+
+## check street names occure in the data
+sapply(X = streetNames, FUN = function(s) { s %in% crashData$crash_locn1 })
+sapply(X = streetNames, FUN = function(s) { s %in% crashData$crash_locn2 })
+
+```    
+
+I will take a subset of the data where one of these street names
+occurs in both `crash_locn1` and `crash_locn2`.
+
+```{r intersectionData}
+
+intersectionData = crashData[
+    crashData$crash_locn1 %in% streetNames
+    & crashData$crash_locn2 %in% streetNames, ]
+
+```
+
+![map of intersection of Karangahape and Newton Roads, Auckland](intersectionMap.png)
+
