@@ -1,0 +1,72 @@
+% Govhack 2017 data exploration
+% Ashley Noel Hinton
+% `r format(Sys.time(), "%d %B %Y")`
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(cache = TRUE)
+```
+
+```{r libraries}
+library(knitr)
+library(rmarkdown)
+library(stringi)
+```
+
+The day before Govhack started I was standing in a shop looking out
+onto a busy Karangahape Road intersection, talking to the shop owner
+about how there were lots of traffic accidents on the
+intersection. Mostly they were trying to convince an employee to cross
+at the pedestrian crossing rather than shooting between parked
+cars. Someone suggested that surely information about how many
+accidents happened at that intersection must be online somewhere, and
+they searched on Google to find it. They couldn't find it.
+
+This hack attempts to at least answer the question: how many traffic
+accidents happen at this intersection?
+
+## Data source
+
+I will use the
+[disaggregated crash data](https://www.nzta.govt.nz/safety/safety-resources/road-safety-information-and-tools/disaggregated-crash-data/) 
+from NZ Transport Agency (NZTA) to try to answer this question. The data set has
+been downloaded and is in this repo as a 62MB CSV file,
+[Disaggregated-crash-data.csv](Disaggregated-crash-data.csv).
+An accompanying metadata file has also been downloaded from NZTA,
+[disaggregated-crash-data-metadata.csv](disaggregated-crash-data-metadata.csv).
+
+```{r loadData}
+crashData = read.csv(file = "Disaggregated-crash-data.csv")
+summary(crashData)
+dim(crashData)
+```
+Excellent, `r dim(crashData)[1]` rows in `r dim(crashData)[2]` columns
+of data. What do the variables represent?
+
+```{r loadMetaData}
+
+## this file is *NOT* in UTF-8. best guess at encoding:
+(encoding = stringi::stri_enc_detect(
+    paste(readLines("disaggregated-crash-data-metadata.csv"),
+          collapse = "\n"))[[1]]$Encoding[1])
+## read the data using this encoding
+crashMetadata = read.csv(file = "disaggregated-crash-data-metadata.csv",
+                         stringsAsFactors = FALSE,
+                         fileEncoding = toupper(encoding))
+names(crashMetadata)
+
+## what's in columns 3:5?
+head(crashMetadata[, 3:5])
+## nothing?
+all(is.na((crashMetadata)[, 3:5]))
+## drop them
+crashMetadata = crashMetadata[, 1:2]
+
+```
+
+```{r printMetadata}
+
+## print the table
+kable(crashMetadata)
+
+```
+
