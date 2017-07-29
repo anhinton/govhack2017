@@ -34,20 +34,34 @@ been downloaded and is in this repo as a 62MB CSV file,
 An accompanying metadata file has also been downloaded from NZTA,
 [disaggregated-crash-data-metadata.csv](disaggregated-crash-data-metadata.csv).
 
+### Load crash data
+
 ```{r loadData}
-crashData = read.csv(file = "Disaggregated-crash-data.csv")
+
+## this file is *NOT* in UTF-8. best guess at encoding:
+rawData = rawToChar(
+    readBin("Disaggregated-crash-data.csv", "raw", 100000))
+(encoding = stringi::stri_enc_detect(rawData)[[1]]$Encoding[1])
+
+## read the data using this encoding
+crashData = read.csv(file = "Disaggregated-crash-data.csv",
+                     fileEncoding = encoding)
 summary(crashData)
 dim(crashData)
+
 ```
 Excellent, `r dim(crashData)[1]` rows in `r dim(crashData)[2]` columns
 of data. What do the variables represent?
 
+### Load crash metadata
+
 ```{r loadMetaData}
 
 ## this file is *NOT* in UTF-8. best guess at encoding:
-(encoding = stringi::stri_enc_detect(
-    paste(readLines("disaggregated-crash-data-metadata.csv"),
-          collapse = "\n"))[[1]]$Encoding[1])
+rawMeta = rawToChar(
+    readBin("disaggregated-crash-data-metadata.csv", "raw", 100000))
+(encoding = stringi::stri_enc_detect(rawMeta)[[1]]$Encoding[1])
+
 ## read the data using this encoding
 crashMetadata = read.csv(file = "disaggregated-crash-data-metadata.csv",
                          stringsAsFactors = FALSE,

@@ -132,7 +132,16 @@ library(stringi)</code></pre>
 <div id="data-source" class="section level2">
 <h2>Data source</h2>
 <p>I will use the <a href="https://www.nzta.govt.nz/safety/safety-resources/road-safety-information-and-tools/disaggregated-crash-data/">disaggregated crash data</a> from NZ Transport Agency (NZTA) to try to answer this question. The data set has been downloaded and is in this repo as a 62MB CSV file, <a href="Disaggregated-crash-data.csv" class="uri">Disaggregated-crash-data.csv</a>. An accompanying metadata file has also been downloaded from NZTA, <a href="disaggregated-crash-data-metadata.csv" class="uri">disaggregated-crash-data-metadata.csv</a>.</p>
-<pre class="r"><code>crashData = read.csv(file = &quot;Disaggregated-crash-data.csv&quot;)
+<div id="load-crash-data" class="section level3">
+<h3>Load crash data</h3>
+<pre class="r"><code>## this file is *NOT* in UTF-8. best guess at encoding:
+rawData = rawToChar(
+    readBin(&quot;Disaggregated-crash-data.csv&quot;, &quot;raw&quot;, 100000))
+(encoding = stringi::stri_enc_detect(rawData)[[1]]$Encoding[1])</code></pre>
+<pre><code>## [1] &quot;ISO-8859-1&quot;</code></pre>
+<pre class="r"><code>## read the data using this encoding
+crashData = read.csv(file = &quot;Disaggregated-crash-data.csv&quot;,
+                     fileEncoding = encoding)
 summary(crashData)</code></pre>
 <pre><code>##    CRASH_YEAR     CRASH_FIN_YEAR   CRASH_SEV   fatal_count     
 ##  Min.   :2000   2007/2008: 12150   F:  5675   Min.   :0.00000  
@@ -313,10 +322,13 @@ summary(crashData)</code></pre>
 <pre class="r"><code>dim(crashData)</code></pre>
 <pre><code>## [1] 177302     73</code></pre>
 <p>Excellent, 177302 rows in 73 columns of data. What do the variables represent?</p>
+</div>
+<div id="load-crash-metadata" class="section level3">
+<h3>Load crash metadata</h3>
 <pre class="r"><code>## this file is *NOT* in UTF-8. best guess at encoding:
-(encoding = stringi::stri_enc_detect(
-    paste(readLines(&quot;disaggregated-crash-data-metadata.csv&quot;),
-          collapse = &quot;\n&quot;))[[1]]$Encoding[1])</code></pre>
+rawMeta = rawToChar(
+    readBin(&quot;disaggregated-crash-data-metadata.csv&quot;, &quot;raw&quot;, 100000))
+(encoding = stringi::stri_enc_detect(rawMeta)[[1]]$Encoding[1])</code></pre>
 <pre><code>## [1] &quot;windows-1252&quot;</code></pre>
 <pre class="r"><code>## read the data using this encoding
 crashMetadata = read.csv(file = &quot;disaggregated-crash-data-metadata.csv&quot;,
@@ -643,6 +655,7 @@ kable(crashMetadata)</code></pre>
 </tr>
 </tbody>
 </table>
+</div>
 </div>
 
 
