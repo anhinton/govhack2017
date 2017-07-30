@@ -110,7 +110,7 @@ Useful things I can use:
 
 ## The location
 
-<!-- ![map of intersection of Karangahape and Newton Roads, Auckland](images/intersectionMap.png) -->
+![map of intersection of Karangahape and Newton Roads, Auckland © [OpenStreetMap](http://www.openstreetmap.org/copyright) contributors](images/intersectionMap.png)
 
 The intersection in question is Karangahape and Newton Roads, Newton,
 Auckland. The street names I will search for are:
