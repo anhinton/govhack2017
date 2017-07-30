@@ -108,6 +108,14 @@ showStreetNames = function() {
 
 `r showStreetNames()`
 
+```{r intersectionData, echo = FALSE}
+
+intersectionData = crashData[
+    crashData$crash_locn1 %in% streetNames
+    & crashData$crash_locn2 %in% streetNames, ]
+
+```
+
 ## How many crashes?
 
 ```{r crashDates, echo = FALSE}
@@ -253,7 +261,8 @@ barplot(
     height = crashLocation,
     horiz = TRUE,
     las = 1,
-    main = "Crashes by location")
+    main = "Crashes by location",
+    xlab = "number of crashes")
 par(opar)
 
 ```
