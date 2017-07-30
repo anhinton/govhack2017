@@ -6,10 +6,10 @@ I wanted to know how many traffic accidents happen outside my local
 comic book shop.
 
 See the 'hack' in 'action' (it's a data exploration) at 
-[https://anhinton.github.io/govhack2017/govhack2017.html](govhack2017.html).
+[govhack2017.html](https://anhinton.github.io/govhack2017/govhack2017.html).
 
 See my process in process at
-[https://anhinton.github.io/govhack2017/exploration.html](exploration.html).
+[exploration.html](https://anhinton.github.io/govhack2017/exploration.html).
 
 Experience the source code at <https://github.com/anhinton/govhack2017>.
 
