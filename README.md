@@ -5,10 +5,11 @@ My hack for [Govhack 2017](http://govhack.org.nz/).
 I wanted to know how many traffic accidents happen outside my local
 comic book shop.
 
-See the 'hack' in 'action' (it's a data exploration)
-at [govhack2017.html](govhack2017.html).
+See the 'hack' in 'action' (it's a data exploration) at 
+[https://anhinton.github.io/govhack2017/govhack2017.html](govhack2017.html).
 
-See my process in process at [exploration.html](exploration.html).
+See my process in process at
+[https://anhinton.github.io/govhack2017/exploration.html](exploration.html).
 
 Experience the source code at <https://github.com/anhinton/govhack2017>.
 
