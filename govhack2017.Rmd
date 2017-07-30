@@ -1,5 +1,273 @@
-% Govhack 2017
+% Govhack 2017: crashes at Karangahape Roads and Ponsonby Road intersection
 % Ashley Noel Hinton
-% `r format(Sys.time(), "%d %B %Y")`b
+% 30 July 2017
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(cache = TRUE)
+```
+
+```{r libraries, echo = FALSE}
+library(knitr)
+library(rmarkdown)
+library(stringi)
+```
+
+The day before [Govhack 2017](http://govhack.org.nz/govhack-nz-2017/)
+started I was picking up my weekly comic book pulls from Heroes for
+Sale on K Road at about 6pm. We were talking, as you do, about
+crossing at the pedestrian crossing, looking out the door at the busy
+evening traffic. Someone mentioned that there were heaps of traffic
+accidents on the intersection of Karangahape and Newton Roads, and
+that trying to jay-walk there would be suicidal.
+
+We live in the time of Google, so of course we tried looking online
+for information about how many crashes there were out Heroes for
+Sale's front door, but we came up blank. That's when I decided what my
+hack for the weekend would be: find out how many crashes happened
+outside my local comic book shop.
 
 
+## Data source
+
+I used the
+[disaggregated crash data](https://www.nzta.govt.nz/safety/safety-resources/road-safety-information-and-tools/disaggregated-crash-data/) 
+from [Waka Kotahi](https://www.nzta.govt.nz/) to try to answer this question. 
+The data set has is available as as a 62MB CSV file,
+[Disaggregated-crash-data.csv](Disaggregated-crash-data.csv).
+An accompanying metadata file is also available,
+[disaggregated-crash-data-metadata.csv](disaggregated-crash-data-metadata.csv).
+
+```{r loadData, echo = FALSE}
+
+## this file is *NOT* in UTF-8. best guess at encoding:
+rawData = rawToChar(
+    readBin("Disaggregated-crash-data.csv", "raw", 100000))
+encoding = stringi::stri_enc_detect(rawData)[[1]]$Encoding[1]
+
+## read the data using this encoding
+crashData = read.csv(file = "Disaggregated-crash-data.csv",
+                     fileEncoding = encoding)
+
+```
+
+```{r loadMetaData, echo = FALSE}
+
+## this file is *NOT* in UTF-8. best guess at encoding:
+rawMeta = rawToChar(
+    readBin("disaggregated-crash-data-metadata.csv", "raw", 100000))
+encoding = stringi::stri_enc_detect(rawMeta)[[1]]$Encoding[1]
+
+## read the data using this encoding
+crashMetadata = read.csv(file = "disaggregated-crash-data-metadata.csv",
+                         stringsAsFactors = FALSE,
+                         fileEncoding = toupper(encoding))
+## drop empty columns
+crashMetadata = crashMetadata[, 1:2]
+
+```
+
+```{r lowercaseVariables, echo = FALSE}
+## variable names to lower case
+names(crashData) = tolower(names(crashData))
+
+```
+
+These data record crashes attended by NZ Police in which someone was
+at least minorly injured. The data includes counts of injuries,
+nearest streets or other locations, and much more. There are 
+`r ncol(crashData)` variables for each crash, which are detailed further
+in my [data exploration document](exploration.html).
+
+## The location
+
+![Map of the intersection of Karangahape and Newton Roads, Auckland © [OpenStreetMap](http://www.openstreetmap.org/copyright) contributors](images/intersectionMap.png)
+
+I'm interested in the intersection of Karangahape and Newton Roads in
+Newton, Auckland. For reasons detailed in
+my [data exploration document](exploration.html) there was no easy way
+to search for data by map co-ordinates, so instead I looked for
+crashes occurring at combinations of the following street names:
+
+```{r streetNames, echo = FALSE}
+
+rawStreetNames = c(
+    "Abbey St",         # for some reason street = "ST"
+    "Great North Road", # while road = "ROAD"
+    "Gundry St",    # go figure
+    "Karangahape Road",
+    "Newton Road",
+    "Ponsonby Road")
+
+streetNames = toupper(rawStreetNames)
+
+showStreetNames = function() {
+    paste("  + ", rawStreetNames, sep = "", collapse = "\n")
+}
+
+```
+
+`r showStreetNames()`
+
+## How many crashes?
+
+```{r crashDates, echo = FALSE}
+minYear = min(intersectionData$crash_year)
+maxYear = max(intersectionData$crash_year)
+nCrashes = nrow(intersectionData)
+```
+
+According to my exploration there were **`r nCrashes`** crashes on our
+intersection between `r minYear` and `r maxYear`.
+
+The following plot shows the number of crashes on this intersection by
+year:
+
+```{r crashesByYear, echo = FALSE}
+
+crashesByYear = table(intersectionData$crash_year)
+barplot(
+    height = crashesByYear,
+    las = 2,
+    main = paste("Number of crashes near Karangahape Road",
+                 "and Newton Road intersection",
+                 sep = "\n"),
+    xlab = "year",
+    ylab = "number of crashes")
+
+```
+
+### Crashes by injury severity
+
+```{r crashesBySeverity, echo = FALSE}
+nFatalCrashes =
+    sum(intersectionData$fatal_count > 0)
+nSeriousCrashes =
+    sum(intersectionData$seriousinj_count > 0)
+nMinorCrashes =
+    sum(intersectionData$minorinj_count > 0)
+```
+
+`r nFatalCrashes` crashes resulted in fatal injuries,
+`r nSeriousCrashes` crashes resulted in serious injuries, and 
+`r nMinorCrashes` crashes resulted in minor injuries.
+
+```{r crashesSeverityYear, echo = FALSE}
+
+crashesSeriousYear = aggregate(
+    formula = seriousinj_count ~ crash_year,
+    data = intersectionData[intersectionData$seriousinj_count > 0, ],
+    FUN = "length")
+crashesSeriousYear = merge(
+    x = crashesSeriousYear,
+    y = data.frame(crash_year = minYear:maxYear),
+    all.y = TRUE)
+crashesSeriousYear[is.na(crashesSeriousYear)] = 0
+
+barplot(
+    height = crashesSeriousYear[, 2],
+    axes = FALSE,
+    las = 2,
+    main = "Crashes resulting in serious injury",
+    names.arg = crashesSeriousYear[, 1],
+    xlab = "year",
+    ylab = "number of crashes")
+axis(side = 2,
+     at = min(crashesSeriousYear[, 2]):max(crashesSeriousYear[, 2]),
+     las = 2)
+
+crashesMinorYear = aggregate(
+    formula = minorinj_count ~ crash_year,
+    data = intersectionData[
+        intersectionData$minorinj_count > 0
+        & intersectionData$seriousinj_count == 0, ],
+    FUN = "length")
+
+barplot(
+    height = crashesMinorYear[, 2],
+    las = 2,
+    main = "Crashes resulting in minor injury",
+    names.arg = crashesMinorYear[, 1],
+    xlab = "year",
+    ylab = "number of crashes")
+
+```
+
+### Number of injuries
+
+```{r injuryCounts, echo = FALSE}
+nFatalInjuries = sum(intersectionData$fatal_count)
+nSeriousInjuries = sum(intersectionData$seriousinj_count)
+nMinorInjuries = sum(intersectionData$minorinj_count)
+```
+
+There have been `r nFatalInjuries` fatal injuries, 
+`r nSeriousInjuries` serious injuries, and `r nMinorInjuries` minor injuries, 
+in these `r nCrashes` crashes.
+
+
+```{r injuriesByYear, echo = FALSE}
+
+seriousInjuriesByYear = aggregate(
+    formula = seriousinj_count ~ crash_year,
+    data = intersectionData,
+    FUN = "sum")
+minorInjuriesByYear = aggregate(
+    formula = minorinj_count ~ crash_year,
+    data = intersectionData,
+    FUN = "sum")
+injuriesByYear = merge(
+    x = seriousInjuriesByYear,
+    y = minorInjuriesByYear)
+
+barplot(
+    height = t(injuriesByYear[, 2:3]),
+    args.legend = list(x = "top"),
+    beside = TRUE,
+    las = 2,
+    legend.text = c("serious injuries", "minor injuries"),
+    main = "Number of injuries by severity",
+    names.arg = injuriesByYear[, 1],
+    xlab = "year",
+    ylab = "injuries")
+
+```
+
+### Crash location in detail
+
+I thought it would be intereseting to look closer at *where* these
+crashes occurred. Here I have assumed that the variable `crash_locn1`
+indicates the street on which the crash occurred, and `crash_locn2`
+the nearest side street. With that in mind, the following plot shows
+the number of crashes by location:
+
+```{r crashLocation, echo = FALSE}
+
+crashLocation = paste(
+    intersectionData$crash_locn1,
+    intersectionData$crash_locn2,
+    sep = " & ")
+crashLocation = sort(table(crashLocation))
+
+opar = par(mar = c(5.1, 20.1, 4.1, 2.1))
+barplot(
+    height = crashLocation,
+    horiz = TRUE,
+    las = 1,
+    main = "Crashes by location")
+par(opar)
+
+```
+
+## Resources
+
+  + [Disaggregated crash data](https://www.nzta.govt.nz/safety/safety-resources/road-safety-information-and-tools/disaggregated-crash-data/)
+    by [Waka Kotahi](https://www.nzta.govt.nz/) is licensed under a 
+	Creative [Commons Attribution 4.0 International License](http://creativecommons.org/licenses/by/4.0/).
+	
+  + The map, [images/intersectionMap.png](images/intersectionMap.png)
+    is, © [OpenStreetMap](http://www.openstreetmap.org/copyright)
+    contributors.
+	
+<hr>
+
+<a rel="license" href="http://creativecommons.org/licenses/by/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/88x31.png" /></a><br /><span xmlns:dct="http://purl.org/dc/terms/" property="dct:title">Govhack 2017</span> by <a xmlns:cc="http://creativecommons.org/ns#" href="https://canadia.co.nz/" property="cc:attributionName" rel="cc:attributionURL">Ashley Noel Hinton</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution 4.0 International License</a>.
