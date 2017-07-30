@@ -110,6 +110,8 @@ Useful things I can use:
 
 ## The location
 
+<!-- ![map of intersection of Karangahape and Newton Roads, Auckland](images/intersectionMap.png) -->
+
 The intersection in question is Karangahape and Newton Roads, Newton,
 Auckland. The street names I will search for are:
 
@@ -124,8 +126,8 @@ streetNames = toupper(c(
     "Ponsonby Road"))
 
 ## check street names occure in the data
-sapply(X = streetNames, FUN = function(s) { s %in% crashData$crash_locn1 })
-sapply(X = streetNames, FUN = function(s) { s %in% crashData$crash_locn2 })
+all(sapply(X = streetNames, FUN = function(s) { s %in% crashData$crash_locn1 }))
+all(sapply(X = streetNames, FUN = function(s) { s %in% crashData$crash_locn2 }))
 
 ```    
 
@@ -138,7 +140,173 @@ intersectionData = crashData[
     crashData$crash_locn1 %in% streetNames
     & crashData$crash_locn2 %in% streetNames, ]
 
+## check that we're in the right part of the country
+unique(intersectionData[, c("lg_region_desc", "tla_name")])
+## that said Auckland, right? ✓
+
 ```
 
-![map of intersection of Karangahape and Newton Roads, Auckland](intersectionMap.png)
+### Map co-ordinates
 
+Why didn't I use the `northing` and `easting` variables to do some
+fancy map stuff. Because I have no idea what the heck they are!
+Somebody from NZTA, please, explain to me how I can convert these
+numbers into map co-ordinates for modern internet humans! Let me explain.
+
+Here the extreme `northing` and `easting` values for the rows in my
+data subset:
+
+```{r northingEastingIntersection}
+
+(mapcoords = c(
+    minNorth = min(intersectionData$northing),
+    minEast = min(intersectionData$easting),
+    maxNorth = max(intersectionData$northing),
+    maxEast = max(intersectionData$easting)
+))
+
+```
+
+The metadata tells us the that `easting` is 
+"`r crashMetadata[crashMetadata$Variable.Name == "easting", 2]`", so I just 
+need to find out about NZMG. NZTA is not much further help on this, but 
+Land Information New Zealand (LINZ) tells me that this is 
+[New Zealand Map Grid](http://www.linz.govt.nz/data/geodetic-system/datums-projections-heights/projections/new-zealand-map-grid-nzmg), 
+and they even have a convenient online tool to 
+[convert NZMG to WGS84](http://apps.linz.govt.nz/coordinate-conversion/index.aspx?Advanced=1&IS=NZMG&OS=WGS84&IO=NE&IC=H&IH=-&OO=NE&OC=H&OH=-&PN=N&IF=T&ID=%20&OF=H&OD=%20&CI=Y&do_entry=Enter%20coordinates&DEBUG=&ADVANCED=0)
+([World Geodetic System 1984](http://www.linz.govt.nz/data/geodetic-system/datums-projections-and-heights/geodetic-datums/world-geodetic-system-1984-wgs84)).
+This looks like it is probably latitude and longide as I know them,
+so what happens when I put the co-ordinates above into the conversion
+tool?
+
+> Errors in the data  
+> Point 1: Coordinates out of range for grid  
+> Point 2: Coordinates out of range for grid  
+> 
+> There are no coordinates available to convert.
+
+This is no help at all! So I gave up on map co-ordinates.
+
+## How many crashes?
+
+```{r crashDates}
+minYear = min(intersectionData$crash_year)
+maxYear = max(intersectionData$crash_year)
+nCrashes = nrow(intersectionData)
+```
+
+According to the data there were `r nCrashes` crashes on our
+intersection between `r minYear` and `r maxYear`.
+
+```{r crashesByYear}
+
+crashesByYear = table(intersectionData$crash_year)
+barplot(
+    height = crashesByYear,
+    las = 2,
+    main = "Number of crashes near K Road and Ponsonby Road intersection",
+    xlab = "year",
+    ylab = "crashes")
+
+```
+
+```{r injuryCounts}
+nFatalInjuries = sum(intersectionData$fatal_count)
+nSeriousInjuries = sum(intersectionData$seriousinj_count)
+nMinorInjuries = sum(intersectionData$minorinj_count)
+```
+
+There have been `r nFatalInjuries` fatal injuries, 
+`r nSeriousInjuries` serious injuries, and `r nMinorInjuries` minor injuries, 
+in these `r nCrashes` crashes.
+
+
+```{r injuriesByYear}
+
+seriousInjuriesByYear = aggregate(
+    formula = seriousinj_count ~ crash_year,
+    data = intersectionData,
+    FUN = "sum")
+minorInjuriesByYear = aggregate(
+    formula = minorinj_count ~ crash_year,
+    data = intersectionData,
+    FUN = "sum")
+injuriesByYear = merge(
+    x = seriousInjuriesByYear,
+    y = minorInjuriesByYear)
+
+barplot(
+    height = t(injuriesByYear[, 2:3]),
+    args.legend = list(x = "top"),
+    beside = TRUE,
+    las = 2,
+    legend.text = c("serious injuries", "minor injuries"),
+    main = "Number of injuries by severity",
+    names.arg = injuriesByYear[, 1],
+    xlab = "year",
+    ylab = "injuries")
+
+```
+
+```{r crashesBySeverity}
+nSeriousCrashes =
+    sum(intersectionData$seriousinj_count > 0)
+nMinorCrashes =
+    sum(intersectionData$minorinj_count > 0)
+```
+
+`r nSeriousCrashes` crashes resulted in serious injuries, and 
+`r nMinorCrashes` crashes resulted in minor injuries.
+
+```{r crashesSeverityYear}
+
+crashesSeriousYear = aggregate(
+    formula = seriousinj_count ~ crash_year,
+    data = intersectionData[intersectionData$seriousinj_count > 0, ],
+    FUN = "length")
+crashesSeriousYear = merge(
+    x = crashesSeriousYear,
+    y = data.frame(crash_year = minYear:maxYear),
+    all.y = TRUE)
+crashesSeriousYear[is.na(crashesSeriousYear)] = 0
+
+barplot(
+    height = crashesSeriousYear[, 2],
+    axes = FALSE,
+    las = 2,
+    main = "Crashes resulting in serious injury",
+    names.arg = crashesSeriousYear[, 1],
+    xlab = "year",
+    ylab = "crashes")
+axis(side = 2,
+     at = min(crashesSeriousYear[, 2]):max(crashesSeriousYear[, 2]),
+     las = 2)
+
+crashesMinorYear = aggregate(
+    formula = minorinj_count ~ crash_year,
+    data = intersectionData[
+        intersectionData$minorinj_count > 0
+        & intersectionData$seriousinj_count == 0, ],
+    FUN = "length")
+
+barplot(
+    height = crashesMinorYear[, 2],
+    las = 2,
+    main = "Crashes resulting in minor injury",
+    names.arg = crashesMinorYear[, 1],
+    xlab = "year",
+    ylab = "crashes")
+
+```
+
+```{r crashLocation}
+
+crashLocation = sort(table(as.character(intersectionData$crash_locn1)))
+
+opar = par(mar = c(5.1, 12.1, 4.1, 2.1))
+barplot(
+    height = crashLocation,
+    horiz = TRUE,
+    las = 1,
+    main = "Crashes by main location")
+par(opar)
