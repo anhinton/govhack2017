@@ -301,12 +301,18 @@ barplot(
 
 ```{r crashLocation}
 
-crashLocation = sort(table(as.character(intersectionData$crash_locn1)))
+crashLocation = paste(
+    intersectionData$crash_locn1,
+    intersectionData$crash_locn2,
+    sep = " & ")
+crashLocation = sort(table(crashLocation))
 
-opar = par(mar = c(5.1, 12.1, 4.1, 2.1))
+opar = par(mar = c(5.1, 20.1, 4.1, 2.1))
 barplot(
     height = crashLocation,
     horiz = TRUE,
     las = 1,
-    main = "Crashes by main location")
+    main = "Crashes by location")
 par(opar)
+
+```
