@@ -1,4 +1,4 @@
-% Govhack 2017: crashes at Karangahape Roads and Ponsonby Road intersection
+% Govhack 2017: car crashes at the intersection of Karangahape and Newton Roads
 % Ashley Noel Hinton
 % 30 July 2017
 
